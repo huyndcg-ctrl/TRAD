@@ -1,0 +1,302 @@
+{
+ "tv_symbol": "BINANCE:HYPEUSDT.P",
+ "tv_resolution": "240",
+ "drawings": [
+  {
+   "shape": "horizontal_line",
+   "point": {
+    "time": 1790654400,
+    "price": 89.66
+   },
+   "overrides": "{\"linecolor\": \"#f5a623\", \"linewidth\": 2}"
+  },
+  {
+   "shape": "text",
+   "point": {
+    "time": 1789502400,
+    "price": 89.66
+   },
+   "text": "Neckline 89.66"
+  },
+  {
+   "shape": "rectangle",
+   "point": {
+    "time": 1790654400,
+    "price": 81.87
+   },
+   "point2": {
+    "time": 1791345600,
+    "price": 80.04
+   },
+   "overrides": "{\"color\": \"#2962ff\", \"backgroundColor\": \"rgba(41,98,255,0.18)\", \"fillBackground\": true}"
+  },
+  {
+   "shape": "text",
+   "point": {
+    "time": 1790654400,
+    "price": 80.04
+   },
+   "text": "Vùng long fib 0.706–0.786 80.04-81.87"
+  },
+  {
+   "shape": "trend_line",
+   "point": {
+    "time": 1790654400,
+    "price": 87.144
+   },
+   "point2": {
+    "time": 1790697600,
+    "price": 88.6
+   },
+   "overrides": "{\"linecolor\": \"#26a69a\", \"linewidth\": 2, \"linestyle\": 2}"
+  },
+  {
+   "shape": "trend_line",
+   "point": {
+    "time": 1790697600,
+    "price": 88.6
+   },
+   "point2": {
+    "time": 1790784000,
+    "price": 83.6
+   },
+   "overrides": "{\"linecolor\": \"#ef5350\", \"linewidth\": 2, \"linestyle\": 2}"
+  },
+  {
+   "shape": "trend_line",
+   "point": {
+    "time": 1790784000,
+    "price": 83.6
+   },
+   "point2": {
+    "time": 1790812800,
+    "price": 85.4
+   },
+   "overrides": "{\"linecolor\": \"#26a69a\", \"linewidth\": 2, \"linestyle\": 2}"
+  },
+  {
+   "shape": "trend_line",
+   "point": {
+    "time": 1790812800,
+    "price": 85.4
+   },
+   "point2": {
+    "time": 1790884800,
+    "price": 81.2
+   },
+   "overrides": "{\"linecolor\": \"#ef5350\", \"linewidth\": 2, \"linestyle\": 2}"
+  },
+  {
+   "shape": "trend_line",
+   "point": {
+    "time": 1790884800,
+    "price": 81.2
+   },
+   "point2": {
+    "time": 1791000000,
+    "price": 89.66
+   },
+   "overrides": "{\"linecolor\": \"#26a69a\", \"linewidth\": 2, \"linestyle\": 2}"
+  },
+  {
+   "shape": "trend_line",
+   "point": {
+    "time": 1791000000,
+    "price": 89.66
+   },
+   "point2": {
+    "time": 1791043200,
+    "price": 88.3
+   },
+   "overrides": "{\"linecolor\": \"#ef5350\", \"linewidth\": 2, \"linestyle\": 2}"
+  },
+  {
+   "shape": "trend_line",
+   "point": {
+    "time": 1791043200,
+    "price": 88.3
+   },
+   "point2": {
+    "time": 1791172800,
+    "price": 98.06
+   },
+   "overrides": "{\"linecolor\": \"#26a69a\", \"linewidth\": 2, \"linestyle\": 2}"
+  },
+  {
+   "shape": "trend_line",
+   "point": {
+    "time": 1790654400,
+    "price": 88.6
+   },
+   "point2": {
+    "time": 1790870400,
+    "price": 88.6
+   },
+   "overrides": "{\"linecolor\": \"#ffffff\", \"linewidth\": 1}"
+  },
+  {
+   "shape": "text",
+   "point": {
+    "time": 1790870400,
+    "price": 88.6
+   },
+   "text": "Short retest 88.6"
+  },
+  {
+   "shape": "trend_line",
+   "point": {
+    "time": 1790654400,
+    "price": 91.0
+   },
+   "point2": {
+    "time": 1790870400,
+    "price": 91.0
+   },
+   "overrides": "{\"linecolor\": \"#ff1744\", \"linewidth\": 2}"
+  },
+  {
+   "shape": "text",
+   "point": {
+    "time": 1790870400,
+    "price": 91.0
+   },
+   "text": "STL short 91"
+  },
+  {
+   "shape": "trend_line",
+   "point": {
+    "time": 1790654400,
+    "price": 83.9
+   },
+   "point2": {
+    "time": 1790870400,
+    "price": 83.9
+   },
+   "overrides": "{\"linecolor\": \"#00e676\", \"linewidth\": 1, \"linestyle\": 1}"
+  },
+  {
+   "shape": "text",
+   "point": {
+    "time": 1790870400,
+    "price": 83.9
+   },
+   "text": "TP1 short 83.9"
+  },
+  {
+   "shape": "trend_line",
+   "point": {
+    "time": 1790654400,
+    "price": 81.9
+   },
+   "point2": {
+    "time": 1790870400,
+    "price": 81.9
+   },
+   "overrides": "{\"linecolor\": \"#00e676\", \"linewidth\": 1, \"linestyle\": 1}"
+  },
+  {
+   "shape": "text",
+   "point": {
+    "time": 1790870400,
+    "price": 81.9
+   },
+   "text": "TP2 short 81.9"
+  },
+  {
+   "shape": "trend_line",
+   "point": {
+    "time": 1790841600,
+    "price": 81.4
+   },
+   "point2": {
+    "time": 1791172800,
+    "price": 81.4
+   },
+   "overrides": "{\"linecolor\": \"#ffffff\", \"linewidth\": 1}"
+  },
+  {
+   "shape": "text",
+   "point": {
+    "time": 1791172800,
+    "price": 81.4
+   },
+   "text": "Long fib 81.4"
+  },
+  {
+   "shape": "trend_line",
+   "point": {
+    "time": 1790841600,
+    "price": 79.4
+   },
+   "point2": {
+    "time": 1791172800,
+    "price": 79.4
+   },
+   "overrides": "{\"linecolor\": \"#ff1744\", \"linewidth\": 2}"
+  },
+  {
+   "shape": "text",
+   "point": {
+    "time": 1791172800,
+    "price": 79.4
+   },
+   "text": "STL long 79.4"
+  },
+  {
+   "shape": "trend_line",
+   "point": {
+    "time": 1790841600,
+    "price": 89.66
+   },
+   "point2": {
+    "time": 1791172800,
+    "price": 89.66
+   },
+   "overrides": "{\"linecolor\": \"#00e676\", \"linewidth\": 1, \"linestyle\": 1}"
+  },
+  {
+   "shape": "text",
+   "point": {
+    "time": 1791172800,
+    "price": 89.66
+   },
+   "text": "TP1 long 89.66"
+  },
+  {
+   "shape": "trend_line",
+   "point": {
+    "time": 1790841600,
+    "price": 98.06
+   },
+   "point2": {
+    "time": 1791172800,
+    "price": 98.06
+   },
+   "overrides": "{\"linecolor\": \"#00e676\", \"linewidth\": 1, \"linestyle\": 1}"
+  },
+  {
+   "shape": "text",
+   "point": {
+    "time": 1791172800,
+    "price": 98.06
+   },
+   "text": "TP2 long 98.06"
+  },
+  {
+   "shape": "horizontal_line",
+   "point": {
+    "time": 1790654400,
+    "price": 93.9
+   },
+   "overrides": "{\"linecolor\": \"#e040fb\", \"linewidth\": 2, \"linestyle\": 1}"
+  },
+  {
+   "shape": "text",
+   "point": {
+    "time": 1790683200,
+    "price": 93.9
+   },
+   "text": "INVALIDATION 93.9 4H đóng trên vai phải → H&S hỏng"
+  }
+ ]
+}

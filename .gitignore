@@ -1,0 +1,7 @@
+mexc_config.json
+**/mexc_config.json
+__pycache__/
+*.pyc
+*_log.txt
+*.log
+20??-??-??/
