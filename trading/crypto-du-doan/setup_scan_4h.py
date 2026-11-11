@@ -2,6 +2,8 @@
 
 STL đặt ngoài đỉnh/đáy 4H và cách entry tối thiểu 1 x ATR 4H. Kết quả lưu vào thư mục ngày (YYYY-MM-DD/setup_scan_4h.json).
 Chạy:  python setup_scan_4h.py
+Ghi chú: scan_all.py là bản quét đầy đủ (định nghĩa trùng backtest, có kỳ vọng R). File này giữ lại cho routine cũ.
+PULLBACK SHORT (short khi hồi) chỉ có kỳ vọng dương khi BTC 4H giảm — xem expectancy.json. BREAKOUT: vào ngay, không chờ retest.
 """
 import json, sys, time, urllib.request
 from concurrent.futures import ThreadPoolExecutor
@@ -11,23 +13,20 @@ from pathlib import Path
 sys.stdout.reconfigure(encoding="utf-8")
 OUTDIR = Path(__file__).resolve().parent / date.today().isoformat()
 OUTDIR.mkdir(exist_ok=True)
-F = "https://fapi.binance.com"
-STOCK = {'SAMSUNG','MU','META','MSTR','KORU','DRAM','NVDA','TSLA','COIN','HOOD','AAPL','AMZN','GOOGL','CRCL','INTC','PLTR','AMD','EWY',
-         'TQQQ','QQQ','SPY','XAG','XAU','LITE','SNDK','ORCL','MSFT','AVGO','NFLX','BABA','TSM','SKHYNIX','SKHY','BZ','PUMPBTC','QCOM',
-         'NBIS','CL','NATGAS','NG','HG','SNXX','SOXL','SOXS','TNA','TZA','UVXY','SQQQ','XPT','XPD','WDC','CBRS','MVLL'}
+import core
+from core import get, STOCK          # lõi chung
 SKIP = {'USDCUSDT', 'FDUSDUSDT', 'BTCDOMUSDT'}
 MIN_VOL = 30e6       # volume 24h tối thiểu (USDT)
+MAX_ATR4 = 0.05      # ATR 4H tối đa 5% giá — bỏ coin bơm/xả mạnh
+
+
+def tier(vol_m):
+    """Hạng ưu tiên theo volume 24h (triệu USDT): A ≥100M, B 30–100M, C <30M."""
+    return "A" if vol_m >= 100 else "B" if vol_m >= 30 else "C"
 MAX_ENTRY_DIST = 0.04  # entry cách giá hiện tại tối đa 4%
 MIN_RR1 = 1.5
 
 
-def get(p):
-    for _ in range(3):
-        try:
-            return json.load(urllib.request.urlopen(F + p, timeout=20))
-        except Exception as e:
-            err = e; time.sleep(1.5)
-    raise err
 
 
 def ema(xs, n):
@@ -86,6 +85,8 @@ def analyze(t):
     if len(c) < 150 or len(cd) < 90:
         return []
     p = c[-1]; a = atr(h, l, c)
+    if a > MAX_ATR4 * p:
+        return []
     e34, e89 = ema(c, 34), ema(c, 89); d34, d89 = ema(cd, 34), ema(cd, 89)
     ph, pl = pivots(h, l, 3, 60)
     if len(ph) < 2 or len(pl) < 2:
@@ -126,13 +127,13 @@ def analyze(t):
     bh, bl = max(h[-33:-3]), min(l[-33:-3])
     width = (bh - bl) / bl
     if up_d and any(x > bh for x in c[-3:-1]) and p > bh and max(v[-3:]) / (sum(v[-33:-3]) / 30) >= 1.5 and 0.05 <= width <= 0.35:
-        entry = bh                                   # mua khi retest đỉnh nền
+        entry = p                                    # vào ngay sau nến 4H đóng xác nhận (backtest: tốt hơn chờ retest)
         stop = min(bh - 1.0 * a, e34 - 0.2 * a)
         tp1 = bh + (bh - bl) * 0.6; tp2 = bh + (bh - bl)
         rr1, rr2 = (tp1 - entry) / (entry - stop), (tp2 - entry) / (entry - stop)
         if rr1 >= MIN_RR1 and (p - entry) / p <= MAX_ENTRY_DIST:
             out.append(dict(base, type="BREAKOUT", side="LONG", entry=entry, stop=stop, tp1=tp1, tp2=tp2, rr1=rr1, rr2=rr2,
-                            why=f"đóng 4H trên đỉnh nền {bh:.6g} (nền {width*100:.0f}%), vol {max(v[-3:])/(sum(v[-33:-3])/30):.1f}x, chờ retest"))
+                            why=f"đóng 4H trên đỉnh nền {bh:.6g} (nền {width*100:.0f}%), vol {max(v[-3:])/(sum(v[-33:-3])/30):.1f}x, vào ngay"))
     return out
 
 
@@ -143,7 +144,7 @@ if __name__ == "__main__":
           f" | 1D EMA34 {b['d34']:,.0f} EMA89 {b['d89']:,.0f} RSI {b['rsid']} | đỉnh 4H {b['ph']} đáy 4H {b['pl']} | range30 {b['lo30']:,.0f}–{b['hi30']:,.0f}"
           f" | score {b['score']} → {b['mood']}")
     T = [t for t in get("/fapi/v1/ticker/24hr") if t['symbol'].endswith("USDT") and t['symbol'] not in SKIP
-         and t['symbol'][:-4] not in STOCK and float(t['quoteVolume']) >= MIN_VOL]
+         and not core.is_tradfi(t['symbol']) and t['symbol'][:-4] not in core.BLACKLIST and float(t['quoteVolume']) >= MIN_VOL]
     T = sorted(T, key=lambda t: -float(t['quoteVolume']))[:130]
     fund = {x['symbol'][:-4]: float(x['lastFundingRate']) * 100 for x in get("/fapi/v1/premiumIndex")}
     with ThreadPoolExecutor(12) as ex:
@@ -151,11 +152,12 @@ if __name__ == "__main__":
     for r in res:
         r['fund'] = round(fund.get(r['sym'], 0), 4)
         r['risk'] = round(abs(r['entry'] - r['stop']) / r['entry'] * 100, 2)
+        r['tier'] = tier(r['vol'])
     json.dump(dict(btc=b, setups=res), open(OUTDIR / "setup_scan_4h.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     for typ, side in (("PULLBACK", "LONG"), ("PULLBACK", "SHORT"), ("BREAKOUT", "LONG")):
-        rows = sorted([x for x in res if x['type'] == typ and x['side'] == side], key=lambda x: -x['rr1'])
+        rows = sorted([x for x in res if x['type'] == typ and x['side'] == side], key=lambda x: (x['tier'], -x['rr1']))
         print(f"\n=== {typ} {side} ({len(rows)}) ===")
         for r in rows:
-            print(f"{r['sym']:9} p={r['p']:<10g} entry {r['entry']:<10.6g}({(r['entry']/r['p']-1)*100:+.2f}%) STL {r['stop']:<10.6g}(risk {r['risk']}%)"
+            print(f"[{r['tier']}] {r['sym']:9} p={r['p']:<10g} entry {r['entry']:<10.6g}({(r['entry']/r['p']-1)*100:+.2f}%) STL {r['stop']:<10.6g}(risk {r['risk']}%)"
                   f" TP {r['tp1']:.6g}/{r['tp2']:.6g} RR {r['rr1']:.1f}/{r['rr2']:.1f} | RSI4H {r['r4']} RSI1D {r['rd']} ATR {r['atr']}% volx {r['volx']}"
                   f" fund {r['fund']:+.4f} vol {r['vol']}M | {r['why']}")

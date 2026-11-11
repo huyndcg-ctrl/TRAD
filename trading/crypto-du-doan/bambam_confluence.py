@@ -32,55 +32,8 @@ WATCH = ("BTC ETH SOL BNB XRP DOGE SUI LINK AVAX AAVE ENA WLD DOT NEAR APT FIL I
 
 
 # ---------------------------------------------------------------- dữ liệu Binance
-def get(p):
-    for _ in range(3):
-        try:
-            return json.load(urllib.request.urlopen(F + p, timeout=20))
-        except Exception as e:
-            err = e; time.sleep(1.2)
-    raise err
-
-
-def kl(sym, itv, n):
-    return [(int(x[0]) // 1000, float(x[1]), float(x[2]), float(x[3]), float(x[4]), float(x[7]), float(x[10]))
-            for x in get(f"/fapi/v1/klines?symbol={sym}&interval={itv}&limit={n}")]
-
-
-def ema(xs, n):
-    a, e = 2 / (n + 1), xs[0]
-    for x in xs:
-        e = x * a + e * (1 - a)
-    return e
-
-
-def atr(k, n=14):
-    tr = [max(k[i][2] - k[i][3], abs(k[i][2] - k[i - 1][4]), abs(k[i][3] - k[i - 1][4])) for i in range(1, len(k))]
-    return sum(tr[-n:]) / n
-
-
-def rsi(c, n=14):
-    g = [max(c[i] - c[i - 1], 0) for i in range(len(c) - n, len(c))]
-    d = [max(c[i - 1] - c[i], 0) for i in range(len(c) - n, len(c))]
-    return 100 - 100 / (1 + sum(g) / max(sum(d), 1e-12))
-
-
-def ichimoku(k):
-    h = [x[2] for x in k]; l = [x[3] for x in k]
-    mid = lambda a, b: (max(h[a:b]) + min(l[a:b])) / 2
-    n = len(k)
-    tenkan, kijun = mid(n - 9, n), mid(n - 26, n)
-    j = n - 26                                     # mây tại nến hiện tại = span tính từ 26 nến trước
-    span_a = (mid(j - 9, j) + mid(j - 26, j)) / 2
-    span_b = mid(j - 52, j)
-    return tenkan, kijun, max(span_a, span_b), min(span_a, span_b), span_a > span_b
-
-
-def pivots(k, K=3):
-    hi, lo = [], []
-    for i in range(K, len(k) - K):
-        if k[i][2] == max(x[2] for x in k[i - K:i + K + 1]): hi.append(k[i][2])
-        if k[i][3] == min(x[3] for x in k[i - K:i + K + 1]): lo.append(k[i][3])
-    return hi, lo
+from core import get, kl, ema, rsi, ichimoku, pivots          # lõi chung
+from core import atr_k as atr
 
 
 def htf(sym):

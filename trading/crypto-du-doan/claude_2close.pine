@@ -1,0 +1,14 @@
+//@version=6
+indicator("Claude 2-close alert", overlay=true)
+lvl  = input.float(0.0, "Mốc giá")
+dir  = input.string("short", "Chiều", options=["short", "long"])
+n    = input.int(2, "Số nến đóng liên tiếp", minval=1, maxval=5)
+msg  = input.string("✅", "Nội dung noti")
+beyond(i) => dir == "short" ? close[i] < lvl : close[i] > lvl
+ok = true
+for i = 0 to n - 1
+    ok := ok and beyond(i)
+first = ok and not beyond(n)
+plot(lvl, "Mốc", color=dir == "short" ? color.red : color.green)
+if first and barstate.isconfirmed
+    alert(msg, alert.freq_once_per_bar_close)

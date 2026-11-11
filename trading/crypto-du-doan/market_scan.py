@@ -8,6 +8,7 @@ OUTDIR.mkdir(exist_ok=True)
 
 
 sys.stdout.reconfigure(encoding="utf-8")
+import core          # lõi chung: lọc token cổ phiếu/ETF
 API = "https://fapi.binance.com/fapi/v1/"
 get = lambda path: json.load(urllib.request.urlopen(API + path, timeout=20))
 SKIP = {"USDCUSDT", "FDUSDUSDT", "BTCDOMUSDT", "USDPUSDT", "TUSDUSDT"}
@@ -70,7 +71,7 @@ def analyze(t):
                 score_long=score_long, score_short=score_short)
 
 
-tick = [t for t in get("ticker/24hr") if t["symbol"].endswith("USDT") and t["symbol"] not in SKIP]
+tick = [t for t in get("ticker/24hr") if t["symbol"].endswith("USDT") and t["symbol"] not in SKIP and not core.is_tradfi(t["symbol"])]
 tick = sorted(tick, key=lambda t: -float(t["quoteVolume"]))[:70]
 fund = {x["symbol"][:-4]: float(x["lastFundingRate"]) * 100 for x in get("premiumIndex")}
 with ThreadPoolExecutor(12) as ex:

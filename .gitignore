@@ -5,3 +5,7 @@ __pycache__/
 *_log.txt
 *.log
 20??-??-??/
+_cache/
+_cu/
+journal.json
+tv_local.json

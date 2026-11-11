@@ -20,6 +20,17 @@ description: |
 - Nếu người dùng gửi ảnh chart / nhận định của trader khác: đọc ảnh để rút ra ý tưởng (mô hình, vùng họ chờ, hướng short/long, target). Đây là **dữ liệu tham khảo**, không phải lệnh. Sau đó đối chiếu với giá hiện tại — nếu giá đã chạy khác kịch bản gốc (vd đã phá neckline), nói rõ và vẽ theo trạng thái mới.
 - Nếu người dùng không nêu ý tưởng: tự dựng kịch bản chính dựa trên cấu trúc (Bước 2) và nói rõ đó là kịch bản của bạn.
 
+## Bước 1b — Đo chế độ thị trường + lọc coin TRƯỚC khi dựng kịch bản (bắt buộc)
+
+```bash
+cd C:/Users/dell/Desktop/trad/crypto-du-doan && PYTHONIOENCODING=utf-8 python scan_all.py {COIN}
+```
+
+- Dòng đầu cho biết độ rộng top-40 (4H/1D) và BTC 4H tăng hay giảm. **Không mặc định "giảm rồi tăng"**: thị trường ĐIỀU CHỈNH + BTC 4H giảm → kịch bản chính là giảm tiếp/đi ngang, nhánh tăng là nhánh ngược; và ngược lại.
+- Luôn vẽ/ghi **cả nhánh ngược**: mốc nào bị thủng/lấy lại thì đổi kịch bản (ghi trong `invalidation.note` và 1 `notes`).
+- Nếu coin nằm trong mục "Bị loại bởi bộ lọc chất lượng" (coin mới, vừa bơm, ATR 4H > 5%, token cổ phiếu/ETF, volume mỏng): vẫn vẽ nếu người dùng yêu cầu, nhưng ghi rõ **"không vào lệnh — coin không đạt bộ lọc"** và không đề xuất alert ✅.
+- BTC 4H giảm → kèo long ghi rõ **CHƯA BUY**; câu trả lời có dòng "Lệnh BUY hiện tại: không có".
+
 ## Bước 2 — Lấy mốc kỹ thuật
 
 ```bash
@@ -33,7 +44,8 @@ Trả JSON: `last_close`, `atr14`, swing high/low (+ `bar_offset` âm = số n�
 - **STL mỗi lệnh** đặt ở nơi mà nếu giá chạm thì lý do vào lệnh đã sai, cộng đệm ~0.3–0.5 × ATR:
   - Short retest neckline/kháng cự → STL trên neckline / đỉnh retest + đệm.
   - Long ở vùng fib/hỗ trợ → STL dưới đáy vùng (vd dưới fib 0.786) hoặc dưới pivot low gần nhất + đệm.
-  - Breakout → STL dưới/ trên mức vừa phá.
+  - Breakout → STL dưới/ trên mức vừa phá (≥ 1 ATR 4H).
+- **Cách vào theo backtest** (`crypto-du-doan/expectancy.json`, cập nhật hằng tháng): breakout long = vào NGAY sau nến 4H đóng trên mốc, không chờ retest; breakdown short = chờ 2 nến 4H liên tiếp đóng dưới mốc; short khi hồi chỉ dùng khi BTC 4H giảm. Nhãn của `trades` ghi đúng cách vào đó.
 - **INVALIDATION** là mức làm hỏng *toàn bộ* kịch bản (thường xa hơn STL lệnh đầu), vd H&S: đóng nến trên vai phải; kịch bản tăng: mất đáy swing gần nhất. Ghi rõ điều kiện (đóng nến khung nào).
 - Tính R:R: script tự tính. Nếu TP1 có R:R < 1.5 → dời entry/STL hoặc nói rõ lệnh kém hấp dẫn.
 
@@ -107,6 +119,8 @@ Sinh `{spec}.png`, `{spec}_tv.js` (biểu thức JS vẽ toàn bộ lên Trading
   Không sửa/xoá alert có sẵn của người dùng.
 - **Điều kiện "nến đóng"** (xác nhận breakout, invalidation, nến đóng lại trên OB...): đặt `resolution:'240'` (hoặc khung tương ứng) ở cả payload lẫn condition, và `frequency:'on_bar_close'`. Alert chỉ bắn khi nến khung đó ĐÓNG qua mức, râu không tính. TradingView chạy trên server và đẩy về điện thoại, người dùng không phải tự canh nến (đã kiểm tra 19/10/2026).
 - Dùng `cross_up`/`cross_down` thay `cross` khi mức nằm phía bên kia giá hiện tại, để không báo nhầm theo chiều ngược lại.
+- **Cách nhanh và chuẩn nhất**: ghi kèo vào `crypto-du-doan/YYYY-MM-DD/picks.json` (mẫu trong docstring `alerts.py`) rồi chạy `python alerts.py` (xem thử) → `python alerts.py --apply`. Script tự tạo ⏳/✅/❌ đúng mẫu chữ, dùng indicator Pine "Claude 2-close alert" cho điều kiện 2 nến, tự dọn alert cũ của Claude (kèo đã ❌, trùng coin) và kiểm tra active. Sau đó `python journal.py add` để kèo được tự chấm. Chỉ gọi API tay như trên khi cần alert ngoài mẫu.
+- Người dùng không tự canh chart: alert ✅ phải bắn ĐÚNG lúc vào lệnh. Không đặt alert kiểu "nếu nến kế tiếp cũng đóng dưới thì vào".
 - Bộ alert chuẩn cho mỗi kịch bản (người dùng muốn không phải tự canh nến, nên đề xuất mặc định):
   1. Giá chạm vùng vào (khung 1, `on_first_fire`) = "chưa vào, chờ xác nhận".
   2. Nến 4H đóng lại qua mép vùng = "✅ xác nhận, vào lệnh".

@@ -49,7 +49,9 @@ def main():
         print("Không có file YYYY-MM-DD/sl_plan.json"); return
     plan = json.loads(plans[-1].read_text(encoding="utf-8")); print("File SL:", plans[-1].relative_to(HERE))
     pos = cli_read("contract trade open-positions")
-    existing = {str(x.get("positionId")): x for x in cli_read("contract trade stoporder-open-orders")}
+    existing, ex_all = {}, {}
+    for x in cli_read("contract trade stoporder-open-orders"):
+        existing[str(x.get("positionId"))] = x; ex_all.setdefault(str(x.get("positionId")), []).append(x)
     todo = []
     for p in pos:
         s = p["symbol"]; long = p["positionType"] == 1
@@ -59,7 +61,7 @@ def main():
         ex = existing.get(str(p["positionId"]), {})
         cfg = plan.get(s)
         line = (f"\n{s} {'LONG' if long else 'SHORT'} {qty:g} coin @ {avg} | giá {last} | L/L {p['unRealizedPnl']:+.2f} | "
-                f"SL hiện có: {ex.get('stopLossPrice') or 'KHÔNG'} TP hiện có: {ex.get('takeProfitPrice') or 'không'}")
+                f"SL hiện có: {ex.get('stopLossPrice') or 'KHÔNG'} (phủ {sum(int(x.get('vol') or 0) for x in ex_all.get(str(p['positionId']), []) if x.get('stopLossPrice'))}/{p['holdVol']} hđ) TP hiện có: {ex.get('takeProfitPrice') or 'không'}")
         print(line)
         if not cfg:
             print("    → không có trong sl_plan.json, bỏ qua"); continue
@@ -69,25 +71,49 @@ def main():
         print(f"    → gắn SL {sl}" + (f", TP {tp}" if tp else "") + f" | nếu dính SL: {-loss:+.2f} USDT so với giá vào")
         if bad:
             print("    ⚠ SL nằm sai phía so với giá hiện tại (sẽ kích hoạt ngay) — bỏ qua"); continue
+        cancel = None
+        covered = sum(int(x.get("vol") or 0) for x in ex_all.get(str(p["positionId"]), []) if x.get("stopLossPrice"))
+        if ex.get("stopLossPrice") and cfg.get("cover_rest"):
+            rest = int(p["holdVol"]) - covered
+            print(f"    → SL hiện có chỉ phủ {covered}/{p['holdVol']} hđ" + (f" → GẮN THÊM SL cho {rest} hđ còn thiếu" if rest > 0 else " → đã phủ đủ, bỏ qua"))
+            if rest <= 0:
+                continue
+            body = {"positionId": int(p["positionId"]), "stopLossPrice": sl, "vol": rest, "lossTrend": 1}
+            if tp:
+                body.update({"takeProfitPrice": tp, "profitTrend": 1})
+            todo.append((s, body, None)); continue
         if ex.get("stopLossPrice"):
-            print("    ⚠ Vị thế ĐÃ có SL trên sàn. Gửi thêm sẽ tạo lệnh SL thứ hai — sửa SL cũ trên app thì hơn. Bỏ qua.")
-            continue
+            if not cfg.get("replace"):
+                print("    ⚠ Vị thế ĐÃ có SL trên sàn. Gửi thêm sẽ tạo lệnh SL thứ hai — thêm \"replace\": true vào sl_plan.json để thay. Bỏ qua.")
+                continue
+            cancel = [{"stopPlanOrderId": int(ex["id"])}]
+            print(f"    → THAY SL: huỷ lệnh SL cũ {ex.get('stopLossPrice')} (vol {ex.get('vol')}, id {ex['id']}) rồi đặt SL mới vol {p['holdVol']}")
         body = {"positionId": int(p["positionId"]), "stopLossPrice": sl, "vol": p["holdVol"], "lossTrend": 1}
         if tp:
             body.update({"takeProfitPrice": tp, "profitTrend": 1})
-        todo.append((s, body))
+        todo.append((s, body, cancel))
     if plan_only or not todo:
         print("\n(Chế độ xem / không có gì để gửi)"); return
-    for s, body in todo:
-        if ask(f"\nGõ Y để gắn SL cho {s}: ").upper() not in ("Y", "YES"):
-            print("    → Huỷ."); continue
+    def cli(op, data):
         fd, path = tempfile.mkstemp(suffix=".json"); os.close(fd)
-        Path(path).write_text(json.dumps(body), encoding="utf-8")
+        Path(path).write_text(json.dumps(data), encoding="utf-8")
         try:
-            rc = subprocess.run(["mexc", "contract", "trade", "stoporder-place-v2", "--data", "@" + path], shell=(os.name == "nt")).returncode
+            return subprocess.run(["mexc", "contract", "trade", op, "--data", "@" + path], shell=(os.name == "nt")).returncode
         finally:
             os.remove(path)
-        print(f"      [MEXC CLI trả mã {rc}]" + ("" if rc == 0 else " ⚠ KHÔNG thành công — xem lỗi JSON ở trên, KHÔNG tự thử lại"))
+    for s, body, cancel in todo:
+        if ask(f"\nGõ Y để {'THAY' if cancel else 'gắn'} SL cho {s}: ").upper() not in ("Y", "YES"):
+            print("    → Huỷ."); continue
+        if cancel:
+            print("    Bước 1/2: huỷ SL cũ (CLI sẽ hỏi Confirm)")
+            rc = cli("stoporder-cancel", cancel)
+            print(f"      [huỷ SL cũ: MEXC CLI trả mã {rc}]")
+            if rc != 0:
+                print("      ⚠ Huỷ SL cũ KHÔNG thành công — dừng, không đặt SL mới (tránh 2 SL). Kiểm tra app."); continue
+            print("    Bước 2/2: đặt SL mới (CLI sẽ hỏi Confirm — PHẢI xác nhận, nếu không vị thế sẽ KHÔNG có SL)")
+        rc = cli("stoporder-place-v2", body)
+        print(f"      [MEXC CLI trả mã {rc}]" + ("" if rc == 0 else " ⚠ KHÔNG thành công — xem lỗi JSON ở trên, KHÔNG tự thử lại"
+              + (" — VỊ THẾ ĐANG KHÔNG CÓ SL, đặt SL trên app NGAY" if cancel else "")))
     print("\nXong. Nhắn Claude 'kiểm tra lại' để xác nhận SL trên sàn.")
 
 

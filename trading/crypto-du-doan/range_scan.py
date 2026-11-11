@@ -9,6 +9,7 @@ OUTDIR.mkdir(exist_ok=True)
 
 
 sys.stdout.reconfigure(encoding="utf-8")
+import core          # lõi chung: lọc token cổ phiếu/ETF + coin không chơi
 API = "https://fapi.binance.com/fapi/v1/"
 STOCK = {'SAMSUNG','MU','META','MSTR','KORU','DRAM','NVDA','TSLA','COIN','HOOD','AAPL','AMZN','GOOGL','CRCL','INTC','PLTR','AMD',
          'EWY','TQQQ','QQQ','SPY','XAG','XAU','LITE','SNDK','ORCL','MSFT','AVGO','NFLX','BABA','TSM','SKHYNIX','SKHY','BZ','PUMPBTC'}
@@ -70,7 +71,7 @@ def analyze(t):
                 chg24=float(t['priceChangePercent']))
 
 
-T = [t for t in get('ticker/24hr') if t['symbol'].endswith('USDT') and t['symbol'] not in SKIP and t['symbol'][:-4] not in STOCK]
+T = [t for t in get('ticker/24hr') if t['symbol'].endswith('USDT') and t['symbol'] not in SKIP and not core.is_tradfi(t['symbol']) and t['symbol'][:-4] not in core.BLACKLIST]
 T = sorted(T, key=lambda t: -float(t['quoteVolume']))[:130]
 fund = {x['symbol'][:-4]: float(x['lastFundingRate']) * 100 for x in get('premiumIndex')}
 with ThreadPoolExecutor(12) as ex:

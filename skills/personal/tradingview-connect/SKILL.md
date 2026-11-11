@@ -21,10 +21,22 @@ Gọi `tv_health_check`. Nếu kết quả có `api_available: true` → bỏ qu
 
 ### Bước 2 – Khởi động TradingView (chỉ khi chưa kết nối)
 
-Chạy PowerShell:
+**Trước khi khởi động, kiểm tra đã có TradingView chạy chưa** (`tasklist | findstr /i tradingview`):
+- Có process nhưng cổng 9222 không trả lời (`curl -s -m 3 http://127.0.0.1:9222/json/version` rỗng) → TradingView đang mở KHÔNG có cổng debug. **Không tự tắt** app của người dùng: báo họ đóng TradingView rồi chạy lại skill này.
+- Không có process → khởi động như dưới.
+- Sau khi kết nối, nếu trang có hộp "Phiên bị ngắt kết nối" (tài khoản đang mở trên máy khác): **KHÔNG bấm "Kết nối"**, dừng và báo người dùng.
+- Không click theo toạ độ (màn hình scale 125%), không dùng `draw_clear`, không sửa/xoá alert và hình vẽ của người dùng.
+
+Máy này có 2 bản TradingView. Bản portable (mặc định của skill này):
 ```
 Start-Process "C:\Users\dell\TradingView-portable\TradingView.exe" -ArgumentList "--remote-debugging-port=9222"
 ```
+
+Bản Microsoft Store (routine 8h và các script trong `crypto-du-doan` dùng bản này vì nó giữ phiên đăng nhập + alert):
+```
+$pkg = Get-AppxPackage -Name '*TradingView*' | Select -First 1; $exe = Join-Path $pkg.InstallLocation 'TradingView.exe'; $appId = (Get-AppxPackageManifest $pkg).Package.Applications.Application.Id; Invoke-CommandInDesktopPackage -PackageFamilyName $pkg.PackageFamilyName -AppId $appId -Command $exe -Args '--remote-debugging-port=9222'
+```
+Chỉ mở MỘT bản (hai bản cùng tài khoản sẽ đá phiên của nhau). Việc liên quan alert/kèo → dùng bản Store; chỉ nạp Pine thử nghiệm → bản nào đang mở thì dùng bản đó.
 
 Chờ 6 giây:
 ```
